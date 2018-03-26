@@ -21,6 +21,30 @@ class MainWindow(QWidget):
         tabs.addTab(tab_int, "Intersections")
         tabs.addTab(tab_hull, "Convex Hulls")
 
+        # Intersections
+        cb_type = QComboBox()
+        cb_type.setToolTip("Mode")
+        cb_type.addItems(["1 point", "1 point, 1 line", "2 lines"])
+
+        lbl_p1x = QLabel("P1 (x):")
+        txt_p1x = QLineEdit()
+        txt_p1x.setMaximumWidth(50)
+        lbl_p1y = QLabel("P1 (y):")
+        txt_p1y = QLineEdit()
+        txt_p1y.setMaximumWidth(50)
+
+        tab_int.layout = QHBoxLayout()
+        tab_int.layout.addWidget(cb_type)
+        tab_int.layout.addStretch()
+        tab_int.layout.addWidget(lbl_p1x)
+        tab_int.layout.addWidget(txt_p1x)
+        tab_int.layout.addWidget(lbl_p1y)
+        tab_int.layout.addWidget(txt_p1y)
+        tab_int.layout.addStretch()
+        tab_int.setLayout(tab_int.layout)
+
+        # Convex Hulls
+
         # Graph space
         self.figure = Figure()
         FigureCanvas(self.figure)
