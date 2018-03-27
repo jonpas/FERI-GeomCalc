@@ -6,6 +6,8 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from PyQt5.QtWidgets import *
 
+from modes import points_lines as pl
+
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -16,34 +18,44 @@ class MainWindow(QWidget):
     def initUI(self):
         tabs = QTabWidget()
         tabs.setMinimumHeight(100)
-        tab_int = QWidget()
-        tab_hull = QWidget()
-        tabs.addTab(tab_int, "Intersections")
-        tabs.addTab(tab_hull, "Convex Hulls")
 
-        # Intersections
+        # Points and lines
+        tab_pl = QWidget()
+        tabs.addTab(tab_pl, "Points & Lines")
+
         cb_type = QComboBox()
-        cb_type.setToolTip("Mode")
+        cb_type.setToolTip("Input type")
         cb_type.addItems(["1 point", "1 point, 1 line", "2 lines"])
 
-        lbl_p1x = QLabel("P1 (x):")
-        txt_p1x = QLineEdit()
-        txt_p1x.setMaximumWidth(50)
-        lbl_p1y = QLabel("P1 (y):")
-        txt_p1y = QLineEdit()
-        txt_p1y.setMaximumWidth(50)
+        tab_pl.layout = QHBoxLayout()
+        tab_pl.layout.addWidget(cb_type)
+        tab_pl.layout.addStretch()
 
-        tab_int.layout = QHBoxLayout()
-        tab_int.layout.addWidget(cb_type)
-        tab_int.layout.addStretch()
-        tab_int.layout.addWidget(lbl_p1x)
-        tab_int.layout.addWidget(txt_p1x)
-        tab_int.layout.addWidget(lbl_p1y)
-        tab_int.layout.addWidget(txt_p1y)
-        tab_int.layout.addStretch()
-        tab_int.setLayout(tab_int.layout)
+        txt_points = []  # List of tuples
+        for i in range(1,5):
+            lbl_p = QLabel("P{}:".format(i))
+            txt_px = QLineEdit()
+            txt_px.setMaximumWidth(50)
+            txt_py = QLineEdit()
+            txt_py.setMaximumWidth(50)
+            txt_points.append((txt_px, txt_py))
+
+            tab_pl.layout.addWidget(lbl_p)
+            tab_pl.layout.addWidget(txt_px)
+            tab_pl.layout.addWidget(txt_py)
+        tab_pl.layout.addStretch()
+
+        self.pl = pl.PointsLines(txt_points)
+
+        btn_calc = QPushButton("Calculate")
+        btn_calc.clicked.connect(self.pl.calculate)
+
+        tab_pl.layout.addWidget(btn_calc)
+        tab_pl.setLayout(tab_pl.layout)
 
         # Convex Hulls
+        tab_ch = QWidget()
+        tabs.addTab(tab_ch, "Convex Hulls")
 
         # Graph space
         self.figure = Figure()
