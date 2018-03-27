@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 import sys
-import numpy as np
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from matplotlib.patches import Rectangle
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 
@@ -17,14 +17,25 @@ class MainWindow(QWidget):
         self.initUI()
 
     def initUI(self):
-        tabs = QTabWidget()
-        tabs.setFixedHeight(100)
+        # Graph space
+        self.figure = Figure()
+        FigureCanvas(self.figure)
+        self.figure.canvas.mpl_connect("button_press_event", self.on_plot_click)
+        self.figure.canvas.mpl_connect("resize_event", self.on_plot_resize)
 
-        # Points and lines
+        self.plot = self.figure.add_subplot(111)
+        self.plot.tick_params(axis="both", which="both", bottom=False, left=False, labelbottom=False, labelleft=False)
+        self.figure.tight_layout()
+
+        # Tabs
+        self.tabs = QTabWidget()
+        self.tabs.setFixedHeight(100)
+
+        # Tab - Points and lines
         self.pl = pl.PointsLines()
 
         tab_pl = QWidget()
-        tabs.addTab(tab_pl, "Points & Lines")
+        self.tabs.addTab(tab_pl, "Points & Lines")
 
         self.cb_type = QComboBox()
         self.cb_type.setToolTip("Input type")
@@ -42,11 +53,11 @@ class MainWindow(QWidget):
             txt_px = QLineEdit()
             txt_px.setText("0")
             txt_px.setMaximumWidth(50)
-            txt_px.textChanged.connect(lambda: self.pl_update_ui(self.pl, self.txt_points))
+            txt_px.editingFinished.connect(lambda: self.pl_update_ui(self.pl, self.txt_points, replot=True))
             txt_py = QLineEdit()
             txt_py.setText("0")
             txt_py.setMaximumWidth(50)
-            txt_py.textChanged.connect(lambda: self.pl_update_ui(self.pl, self.txt_points))
+            txt_py.editingFinished.connect(lambda: self.pl_update_ui(self.pl, self.txt_points, replot=True))
 
             self.txt_points.append((txt_px, txt_py))
 
@@ -66,18 +77,13 @@ class MainWindow(QWidget):
 
         self.pl_update_ui(self.pl, self.txt_points)
 
-        # Convex Hulls
+        # Tab - Convex Hulls
         tab_ch = QWidget()
-        tabs.addTab(tab_ch, "Convex Hulls")
-
-        # Graph space
-        self.figure = Figure()
-        FigureCanvas(self.figure)
-        self.figure.canvas.mpl_connect("button_press_event", self.on_plot_click)
+        self.tabs.addTab(tab_ch, "Convex Hulls")
 
         # Layout
         vbox = QVBoxLayout()
-        vbox.addWidget(tabs)
+        vbox.addWidget(self.tabs)
         vbox.addWidget(self.figure.canvas)
 
         # Window
@@ -90,9 +96,33 @@ class MainWindow(QWidget):
 
     def on_plot_click(self, event):
         if event.xdata is not None and event.ydata is not None:
-            print("TODO plot points: {}, {}".format(event.xdata, event.ydata))
+            if self.tabs.currentIndex() == 0:
+                if len(self.plot.patches) > self.pl.mode + 1:
+                    self.plot_clear()
+                self.plot_point(event.xdata, event.ydata)
+                self.pl_update_ui(self.pl, self.txt_points, replot=False)
 
-    def pl_update_ui(self, pl, txt_points):
+    def on_plot_resize(self, event):
+        self.plot.set_xlim((0, event.width))
+        self.plot.set_ylim((0, event.height))
+
+    def plot_clear(self):
+        [patch.remove() for patch in self.plot.patches[::-1]]
+        [text.remove() for text in self.plot.texts[::-1]]
+
+    def plot_point(self, x, y):
+        rect = Rectangle((x, y), 5, 5, color="black")
+        self.plot.add_patch(rect)
+
+        npatches = len(self.plot.patches)
+        self.plot.text(x + 7, y - 5, "P{}".format(npatches), fontsize=9)
+        self.figure.canvas.draw()
+
+        self.txt_points[npatches - 1][0].setText(str(int(x)))
+        self.txt_points[npatches - 1][1].setText(str(int(y)))
+
+    def pl_update_ui(self, pl, txt_points, replot=False):
+        # Toggle available points based on mode
         if pl.mode == 0:
             [[p.setDisabled(True) for p in points] for points in txt_points[2:]]
         elif pl.mode == 1:
@@ -101,6 +131,7 @@ class MainWindow(QWidget):
         elif pl.mode == 2:
             [[p.setDisabled(False) for p in points] for points in txt_points[2:]]
 
+        # Get point coordinates
         try:
             points = [(float(txt_point[0].text()), float(txt_point[1].text())) for txt_point in txt_points]
         except ValueError:
@@ -108,6 +139,12 @@ class MainWindow(QWidget):
             return
         else:
             self.pl.set_points(points)
+
+        if replot:
+            # (Re)plot all points
+            self.plot_clear()
+            for point in points[:self.pl.mode + 2]:
+                self.plot_point(point[0], point[1])
 
     def pl_calculate(self):
         msg = QMessageBox()
