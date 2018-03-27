@@ -20,21 +20,19 @@ class PointsLines():
     def calculate(self):
         if self.mode == 0:
             distance = self.euclidean_dist(self.p1, self.p2)
-            text = "Euclidean distance between P1 and P2:\n{}".format(distance)
+            text = "Euclidean distance between P1 and P2:\n{:.3f}".format(distance)
             return distance, text, None, None
         elif self.mode == 1:
-            exists, p5, distance, closest = self.orth_projection(self.p1, self.p2, self.p3)
+            falls_on, pp, distance, closest = self.orth_projection(self.p1, self.p2, self.p3)
 
-            text = "Orthogonal projection of P1 onto L1(P2,P3):\n"
-            if exists:
-                text += "P5 ({}, {})\n".format(p5[0], p5[1])
-                text += "Distance between P1 and P5: {}".format(distance)
-            else:
-                text += "P5 does not exist\n"
-                closest = "P2" if np.array_equal(p5, self.p2) else "P3"
-                text += "Shortest distance is between P1 and {}: {}".format(closest, distance)
+            closest_text = "PP"
+            text = "Orthogonal projection of P1 onto L1(P2,P3):\nP5 ({:.3f}, {:.3f})".format(pp[0], pp[1])
+            if not falls_on:
+                text += ", but does not fall on the line."
+                closest_text = "P2" if np.array_equal(closest, self.p2) else "P3"
+            text += "\nDistance between P1 and {}: {:.3f}".format(closest_text, distance)
 
-            return distance, text, p5, closest
+            return distance, text, pp, closest
         elif self.mode == 2:
             result = self.intersection(self.p1, self.p2, self.p3, self.p4)
             return result, "Intersection between L1(P1,P2) and L2(P3,P4)\n{}".format(result), None, None
@@ -54,9 +52,9 @@ class PointsLines():
         sp = np.dot(vN, v2)
         pp = p2 + vN * sp  # Projected point
 
-        exists = 0 <= sp <= np.linalg.norm(v1)  # Is projection even possible?
+        falls_on = 0 <= sp <= np.linalg.norm(v1)  # Does projection fall on the line
         closest = pp  # Closest point to line
-        if exists:
+        if falls_on:
             distance = self.euclidean_dist(p1, pp)  # Distance between P1 and PP
         else:
             # Find closest
@@ -66,12 +64,12 @@ class PointsLines():
             distance = distance_p2  # Distance between P1 and closest end-point of line
             closest = p2
 
-            if distance_p3 < distance_p3:
+            if distance_p3 < distance_p2:
                 distance = distance_p3
                 closest = p3
 
-        # Projection exists, projected point, closest distance to line, closest point on line
-        return exists, pp, distance, closest
+        # Projection falls on line, projected point, closest distance to line, closest point on line
+        return falls_on, pp, distance, closest
 
     def intersection(self, p1, p2, p3, p4):
         print("intersection")

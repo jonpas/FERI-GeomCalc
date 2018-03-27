@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+import numpy as np
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from matplotlib.patches import Rectangle
@@ -110,12 +111,13 @@ class MainWindow(QWidget):
         [patch.remove() for patch in self.plot.patches[::-1]]
         [text.remove() for text in self.plot.texts[::-1]]
 
-    def plot_point(self, x, y):
-        rect = Rectangle((x, y), 5, 5, color="black")
+    def plot_point(self, x, y, text="", color="black"):
+        rect = Rectangle((x, y), 5, 5, color=color)
         self.plot.add_patch(rect)
 
         npatches = len(self.plot.patches)
-        self.plot.text(x + 7, y - 5, "P{}".format(npatches), fontsize=9)
+        text = "P{}".format(npatches) if not text else text
+        self.plot.text(x + 7, y - 5, text, fontsize=9, color=color)
         self.figure.canvas.draw()
 
         self.txt_points[npatches - 1][0].setText(str(int(x)))
@@ -147,19 +149,25 @@ class MainWindow(QWidget):
                 self.plot_point(point[0], point[1])
 
     def pl_calculate(self):
+        self.pl_update_ui(self.pl, self.txt_points, replot=True)
+
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Information)
         msg.setWindowTitle("Points & Lines Result")
 
-        result, text, p5, closest = self.pl.calculate()
+        result, text, pp, closest = self.pl.calculate()
 
-        if p5 is not None:
-            print("TODO plot p5")
-        if closest is not None:
-            print("TODO plot line from p5 to closest")
+        if pp is not None:
+            self.plot_point(pp[0], pp[1], text="PP", color="red")
+        if np.array_equal(closest, pp):
+            print("TODO plot line from p1 to pp")
+        else:
+            print("TODO plot line from p1 to closest")
 
         msg.setText(text)
         msg.exec()
+
+        self.pl_update_ui(self.pl, self.txt_points, replot=True)
 
 
 if __name__ == "__main__":
