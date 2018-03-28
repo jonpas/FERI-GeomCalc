@@ -44,8 +44,7 @@ class MainWindow(QWidget):
         self.cb_type = QComboBox()
         self.cb_type.setToolTip("Input type")
         self.cb_type.addItems(["1 point", "1 point, 1 line", "2 lines"])
-        self.cb_type.currentIndexChanged.connect(lambda: self.pl.set_mode(self.cb_type.currentIndex()))
-        self.cb_type.currentIndexChanged.connect(lambda: self.pl_update_ui(self.pl, self.txt_points))
+        self.cb_type.currentIndexChanged.connect(self.pl_set_mode)
 
         tab_pl.layout = QHBoxLayout()
         tab_pl.layout.addWidget(self.cb_type)
@@ -56,11 +55,11 @@ class MainWindow(QWidget):
             txt_px = QLineEdit()
             txt_px.setText("0")
             txt_px.setMaximumWidth(50)
-            txt_px.editingFinished.connect(lambda: self.pl_update_ui(self.pl, self.txt_points, replot=True))
+            txt_px.editingFinished.connect(lambda: self.pl_update_ui(self.pl, self.txt_points, replot=True, reset=True))
             txt_py = QLineEdit()
             txt_py.setText("0")
             txt_py.setMaximumWidth(50)
-            txt_py.editingFinished.connect(lambda: self.pl_update_ui(self.pl, self.txt_points, replot=True))
+            txt_py.editingFinished.connect(lambda: self.pl_update_ui(self.pl, self.txt_points, replot=True, reset=True))
 
             self.txt_points.append((txt_px, txt_py))
 
@@ -107,7 +106,6 @@ class MainWindow(QWidget):
                 if self.pl.mode == 1 and npatches == 2:
                     self.plot_line(self.pl.p2, (event.xdata, event.ydata))
                 elif self.pl.mode == 2:
-                    print(npatches)
                     if npatches == 1:
                         self.plot_line(self.pl.p1, (event.xdata, event.ydata))
                     elif npatches == 3:
@@ -124,10 +122,13 @@ class MainWindow(QWidget):
     def plot_get_lines(self):
         return [p for p in self.plot.patches if isinstance(p, ConnectionPatch)]
 
-    def plot_clear(self):
+    def plot_clear(self, force=False):
         [patch.remove() for patch in self.plot.patches[::-1]]
         [text.remove() for text in self.plot.texts[::-1]]
         self.lines = []
+
+        if force:
+            self.figure.canvas.draw()
 
     def plot_point(self, p, text="", color="black"):
         x, y = p
@@ -139,8 +140,9 @@ class MainWindow(QWidget):
         self.plot.text(x + 7, y - 5, text, fontsize=9, color=color)
         self.figure.canvas.draw()
 
-        self.txt_points[npatches - 1][0].setText(str(int(x)))
-        self.txt_points[npatches - 1][1].setText(str(int(y)))
+        if self.tabs.currentIndex() == 0 and npatches <= len(self.txt_points):
+            self.txt_points[npatches - 1][0].setText(str(int(x)))
+            self.txt_points[npatches - 1][1].setText(str(int(y)))
 
     def plot_line(self, p1, p2, color="black", temp=False):
         line = ConnectionPatch(p1, p2, coordsA="data", coordsB="data", color=color)
@@ -150,7 +152,7 @@ class MainWindow(QWidget):
         if not temp:
             self.lines.append((p1, p2))
 
-    def pl_update_ui(self, pl, txt_points, replot=False):
+    def pl_update_ui(self, pl, txt_points, replot=False, reset=False):
         # Toggle available points based on mode
         if pl.mode == 0:
             [[p.setDisabled(True) for p in points] for points in txt_points[2:]]
@@ -174,7 +176,20 @@ class MainWindow(QWidget):
             lines = self.lines
             self.plot_clear()
             [self.plot_point(point) for point in points[:self.pl.mode + 2]]
-            [self.plot_line(line[0], line[1]) for line in lines]
+
+            if reset:
+                # Replot missing lines in case of reset
+                npatches = len(self.plot_get_points())
+                if self.pl.mode > 0:
+                    if npatches > 1:
+                        if self.pl.mode == 1:
+                            self.plot_line(self.pl.p2, self.pl.p3)
+                        else:
+                            self.plot_line(self.pl.p1, self.pl.p2)
+                    if npatches > 3:
+                        self.plot_line(self.pl.p3, self.pl.p4)
+            else:
+                [self.plot_line(line[0], line[1]) for line in lines]
 
     def pl_calculate(self):
         self.pl_update_ui(self.pl, self.txt_points, replot=True)
@@ -183,19 +198,27 @@ class MainWindow(QWidget):
         msg.setIcon(QMessageBox.Information)
         msg.setWindowTitle("Points & Lines Result")
 
-        result, text, pp, closest = self.pl.calculate()
+        result, text, p1, p2, point_txt = self.pl.calculate()
 
-        if pp is not None:
-            self.plot_point(pp, text="PP", color="red")
-            if np.array_equal(closest, pp):
-                self.plot_line(self.pl.p1, pp, temp=True)
+        if p1 is not None:
+            if point_txt == "line":
+                self.plot_line(p1, p2, color="red")
             else:
-                self.plot_line(self.pl.p1, closest, temp=True)
+                self.plot_point(p1, text=point_txt, color="red")
+                if np.array_equal(p2, p1):
+                    self.plot_line(self.pl.p1, p1, temp=True)
+                elif p2 is not None:
+                    self.plot_line(self.pl.p1, p2, temp=True)
 
         msg.setText(text)
         msg.exec()
 
         self.pl_update_ui(self.pl, self.txt_points, replot=True)
+
+    def pl_set_mode(self):
+        self.plot_clear(force=True)
+        self.pl.set_mode(self.cb_type.currentIndex())
+        self.pl_update_ui(self.pl, self.txt_points)
 
 
 if __name__ == "__main__":

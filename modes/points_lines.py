@@ -20,22 +20,36 @@ class PointsLines():
     def calculate(self):
         if self.mode == 0:
             distance = euclidean_dist(self.p1, self.p2)
-            text = "Euclidean distance between P1 and P2:\n{:.3f}".format(distance)
-            return distance, text, None, None
+            text = "Euclidean distance between P1 and P2:\n{:g}".format(distance)
+            return distance, text, None, None, None
         elif self.mode == 1:
             falls_on, pp, distance, closest = orth_projection(self.p1, self.p2, self.p3)
 
             closest_text = "PP"
-            text = "Orthogonal projection of P1 onto L1(P2,P3):\nP5 ({:.3f}, {:.3f})".format(pp[0], pp[1])
+            text = "Orthogonal projection of P1 onto L1(P2,P3):\nP5 ({:g}, {:g})".format(pp[0], pp[1])
             if not falls_on:
                 text += ", but does not fall on the line."
                 closest_text = "P2" if np.array_equal(closest, self.p2) else "P3"
-            text += "\nDistance between P1 and {}: {:.3f}".format(closest_text, distance)
+            text += "\nDistance between P1 and {}: {:g}".format(closest_text, distance)
 
-            return distance, text, pp, closest
+            return distance, text, pp, closest, "PP"
         elif self.mode == 2:
-            result = intersection(self.p1, self.p2, self.p3, self.p4)
-            return result, "Intersection between L1(P1,P2) and L2(P3,P4)\n{}".format(result), None, None
+            pi, itype = intersection(self.p1, self.p2, self.p3, self.p4)
+
+            text = "Intersection between L1(P1,P2) and L2(P3,P4):\n"
+            if itype == "coincide":
+                text += "Coincident between\nP1/P3 ({:g}, {:g}) and P2/P4 ({:g}, {:g})".format(
+                    self.p1[0], self.p1[1], self.p2[0], self.p2[1])
+                return 0, text, self.p1, self.p2, "line"
+
+            if itype == "intersection":
+                text += "PI ({:g}, {:g})".format(pi[0], pi[1])
+                return 0, text, pi, None, "PI"
+
+            text += "None"
+            if itype == "parallel":
+                text += ", lines are parallel."
+            return 0, text, None, None, ""
 
 
 def euclidean_dist(p1, p2):
@@ -75,5 +89,24 @@ def orth_projection(p1, p2, p3):
 
 
 def intersection(p1, p2, p3, p4):
+    d = np.cross(p2 - p1, p4 - p3)
+    a = np.cross(p4 - p3, p1 - p3)
+    b = np.cross(p2 - p1, p1 - p3)
 
-    return 0
+    # Lines coincide
+    if d == a == b == 0:
+        return None, "coincide"
+
+    if d == 0:
+        return None, "parallel"
+
+    ua = a / d
+    ub = b / d
+
+    if not 0 <= ua <= 1 and not 0 <= ub <= 1:
+        return None, "none"
+
+    x = p1[0] + ua * (p2[0] - p1[0])
+    y = p1[1] + ua * (p2[1] - p1[1])
+
+    return np.array([x, y]), "intersection"
