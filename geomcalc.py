@@ -187,10 +187,10 @@ class MainWindow(QWidget):
 
         if pp is not None:
             self.plot_point(pp, text="PP", color="red")
-        if np.array_equal(closest, pp):
-            self.plot_line(self.pl.p1, pp, temp=True)
-        else:
-            self.plot_line(self.pl.p1, closest, temp=True)
+            if np.array_equal(closest, pp):
+                self.plot_line(self.pl.p1, pp, temp=True)
+            else:
+                self.plot_line(self.pl.p1, closest, temp=True)
 
         msg.setText(text)
         msg.exec()
