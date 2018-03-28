@@ -30,7 +30,7 @@ class PointsLines():
             if not falls_on:
                 text += ", but does not fall on the line."
                 closest_text = "P2" if np.array_equal(closest, self.p2) else "P3"
-            text += "\nDistance between P1 and {}: {:g}".format(closest_text, distance)
+            text += "\nClosest distance to line is between P1 and {}: {:g}".format(closest_text, distance)
 
             return distance, text, pp, closest, "PP"
         elif self.mode == 2:
