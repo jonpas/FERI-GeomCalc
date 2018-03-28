@@ -44,6 +44,14 @@ class PointsLines():
 
             if itype == "intersection":
                 text += "PI ({:g}, {:g})".format(pi[0], pi[1])
+                eq_p1 = "P1" if np.array_equal(pi, self.p1) else ""
+                eq_p1 = "P2" if np.array_equal(pi, self.p2) else eq_p1
+                eq_p2 = "P3" if np.array_equal(pi, self.p3) else ""
+                eq_p2 = "P4" if np.array_equal(pi, self.p4) else eq_p2
+                if eq_p1:
+                    text += " = {}".format(eq_p1)
+                if eq_p2:
+                    text += " = {}".format(eq_p2)
                 return 0, text, pi, None, "PI"
 
             text += "None"
