@@ -26,11 +26,11 @@ class PointsLines():
             falls_on, pp, distance, closest = orth_projection(self.p1, self.p2, self.p3)
 
             closest_text = "PP"
-            text = "Orthogonal projection of P1 onto L1(P2,P3):\nP5 ({:g}, {:g})".format(pp[0], pp[1])
+            text = "Orthogonal projection of P1 onto L1(P2,P3):\nPP ({:g}, {:g})".format(pp[0], pp[1])
             if not falls_on:
                 text += ", but does not fall on the line."
                 closest_text = "P2" if np.array_equal(closest, self.p2) else "P3"
-            text += "\nClosest distance to line is between P1 and {}: {:g}".format(closest_text, distance)
+            text += "\nShortest distance to line is between P1 and {}: {:g}".format(closest_text, distance)
 
             return distance, text, pp, closest, "PP"
         elif self.mode == 2:

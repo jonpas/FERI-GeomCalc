@@ -39,7 +39,7 @@ class MainWindow(QWidget):
         self.pl = pl.PointsLines()
 
         tab_pl = QWidget()
-        self.tabs.addTab(tab_pl, "Points & Lines")
+        self.tabs.addTab(tab_pl, "Points && Lines")
 
         self.cb_type = QComboBox()
         self.cb_type.setToolTip("Input type")
