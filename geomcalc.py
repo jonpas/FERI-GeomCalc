@@ -138,7 +138,7 @@ class MainWindow(QWidget):
 
         # Window
         self.setLayout(vbox)
-        self.setGeometry(300, 150, 1000, 800)
+        self.setGeometry(50, 50, 1000, 800)
         self.setMinimumWidth(800)
         self.setMinimumHeight(600)
         self.setWindowTitle("Geometry Calculator")
