@@ -154,7 +154,7 @@ class MainWindow(QWidget):
                 npatches = len(self.plot_get_points())
                 if npatches > self.pl.mode + 1:
                     self.plot_clear()
-                self.plot_point((event.xdata, event.ydata))
+                self.plot_point((event.xdata, event.ydata), text="P", num=True)
                 if self.pl.mode == 1 and npatches == 2:
                     self.plot_line(self.pl.p2, (event.xdata, event.ydata))
                 elif self.pl.mode == 2:
@@ -182,14 +182,14 @@ class MainWindow(QWidget):
         if force:
             self.figure.canvas.draw()
 
-    def plot_point(self, p, text="", color="black"):
+    def plot_point(self, p, text="", num=False, color="black"):
         x, y = p
-        rect = Rectangle((x - 2.5, y - 2.5), 5, 5, color=color)
+        rect = Rectangle((int(x) - 2, int(y) - 2), 4, 4, color=color)
         self.plot.add_patch(rect)
 
         npatches = len(self.plot_get_points())
-        text = "P{}".format(npatches) if not text else text
-        self.plot.text(x + 7, y - 5, text, fontsize=9, color=color)
+        text = "{}{}".format(text, npatches if num else "")
+        self.plot.text(int(x) + 7, int(y) - 5, text, fontsize=9, color=color)
         self.figure.canvas.draw()
 
         if self.tabs.currentIndex() == 0 and npatches <= len(self.txt_points):
@@ -251,7 +251,7 @@ class MainWindow(QWidget):
             # (Re)plot all points
             lines = self.lines
             self.plot_clear()
-            [self.plot_point(point) for point in points[:self.pl.mode + 2]]
+            [self.plot_point(point, text="P", num=True) for point in points[:self.pl.mode + 2]]
 
             if reset:
                 # Replot missing lines in case of reset
