@@ -95,9 +95,8 @@ class MainWindow(QWidget):
 
         self.cb_distribution = QComboBox()
         self.cb_distribution.setToolTip("Point distribution")
-        self.cb_distribution.addItems(["Even", "Normal (Gaussian)"])
+        self.cb_distribution.addItems(["Uniform", "Normal (Gaussian)"])
         self.cb_distribution.setMaximumWidth(100)
-        self.distributions = ["even", "normal"]  # Same indexes as text above
 
         lbl_pamount = QLabel("Amount:")
         self.txt_pamount = QLineEdit()
@@ -212,14 +211,14 @@ class MainWindow(QWidget):
             return
 
         amount = int(self.txt_pamount.text())
-        distribution = self.distributions[self.cb_distribution.currentIndex()]
+        distribution = self.cb_distribution.currentIndex()
 
         start = timer()
-        if distribution == "normal":
-            # Normal (Gaussian)
+        if distribution == 0:
+            # Uniform
             points = []
         else:
-            # Even
+            # Normal (Gaussian)
             points = []
         end = timer()
 
