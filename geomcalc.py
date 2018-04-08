@@ -26,6 +26,7 @@ class MainWindow(QWidget):
         # Log
         self.txt_log = QTextEdit()
         self.txt_log.setReadOnly(True)
+        self.txt_log.setFixedHeight(100)
 
         # Graph space
         self.figure = Figure()
@@ -137,7 +138,7 @@ class MainWindow(QWidget):
 
         # Window
         self.setLayout(vbox)
-        self.setGeometry(300, 300, 1000, 600)
+        self.setGeometry(300, 150, 1000, 800)
         self.setMinimumWidth(800)
         self.setMinimumHeight(600)
         self.setWindowTitle("Geometry Calculator")
