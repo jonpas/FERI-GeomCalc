@@ -2,12 +2,12 @@
 
 import sys
 import numpy as np
+from timeit import default_timer as timer
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from matplotlib.patches import Rectangle, ConnectionPatch
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
-from PyQt5.QtCore import Qt
 
 from modes import points_lines as pl
 from modes import convex_hulls as ch
@@ -23,6 +23,10 @@ class MainWindow(QWidget):
         self.initUI()
 
     def initUI(self):
+        # Log
+        self.txt_log = QTextEdit()
+        self.txt_log.setReadOnly(True)
+
         # Graph space
         self.figure = Figure()
         FigureCanvas(self.figure)
@@ -57,10 +61,12 @@ class MainWindow(QWidget):
             txt_px = QLineEdit()
             txt_px.setText("0")
             txt_px.setMaximumWidth(50)
+            txt_px.setValidator(QIntValidator(0, 2147483647))
             txt_px.editingFinished.connect(lambda: self.pl_update_ui(self.pl, self.txt_points, replot=True, reset=True))
             txt_py = QLineEdit()
             txt_py.setText("0")
             txt_py.setMaximumWidth(50)
+            txt_py.setValidator(QIntValidator(0, 2147483647))
             txt_py.editingFinished.connect(lambda: self.pl_update_ui(self.pl, self.txt_points, replot=True, reset=True))
 
             self.txt_points.append((txt_px, txt_py))
@@ -87,25 +93,18 @@ class MainWindow(QWidget):
         tab_ch = QWidget()
         self.tabs.addTab(tab_ch, "Convex Hulls")
 
-        tab_ch_v = QVBoxLayout()
-
         self.cb_distribution = QComboBox()
         self.cb_distribution.setToolTip("Point distribution")
         self.cb_distribution.addItems(["Even", "Normal (Gaussian)"])
         self.cb_distribution.setMaximumWidth(100)
         self.distributions = ["even", "normal"]  # Same indexes as text above
 
-        tab_ch_v_h = QHBoxLayout()
         lbl_pamount = QLabel("Amount:")
         self.txt_pamount = QLineEdit()
         self.txt_pamount.setText("100")
         self.txt_pamount.setToolTip("Amount of points")
         self.txt_pamount.setMaximumWidth(50)
-        tab_ch_v_h.addWidget(lbl_pamount)
-        tab_ch_v_h.addWidget(self.txt_pamount)
-        tab_ch_v_h.addStretch()
-        tab_ch_v.addWidget(self.cb_distribution)
-        tab_ch_v.addLayout(tab_ch_v_h)
+        self.txt_pamount.setValidator(QIntValidator(0, 2147483647))
 
         btn_pgenerate = QPushButton("Generate Points")
         btn_pgenerate.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
@@ -122,18 +121,20 @@ class MainWindow(QWidget):
         btn_convexcalc.clicked.connect(self.ch_calculate)
 
         tab_ch.layout = QHBoxLayout()
-        tab_ch.layout.addLayout(tab_ch_v)
+        tab_ch.layout.addWidget(self.cb_distribution)
+        tab_ch.layout.addWidget(lbl_pamount)
+        tab_ch.layout.addWidget(self.txt_pamount)
         tab_ch.layout.addWidget(btn_pgenerate)
         tab_ch.layout.addStretch()
         tab_ch.layout.addWidget(self.cb_convexalg)
         tab_ch.layout.addWidget(btn_convexcalc)
-        tab_ch.layout.addStretch()
         tab_ch.setLayout(tab_ch.layout)
 
         # Layout
         vbox = QVBoxLayout()
         vbox.addWidget(self.tabs)
         vbox.addWidget(self.figure.canvas)
+        vbox.addWidget(self.txt_log)
 
         # Window
         self.setLayout(vbox)
@@ -142,6 +143,10 @@ class MainWindow(QWidget):
         self.setMinimumHeight(600)
         self.setWindowTitle("Geometry Calculator")
         self.show()
+
+    def log(self, text):
+        self.txt_log.append(str(text))
+        print("LOG: {}".format(text))
 
     def on_plot_click(self, event):
         if event.xdata is not None and event.ydata is not None:
@@ -207,20 +212,21 @@ class MainWindow(QWidget):
             return
 
         amount = int(self.txt_pamount.text())
-        if amount <= 0:
-            print("Invalid amount of points!")
-            return
-
         distribution = self.distributions[self.cb_distribution.currentIndex()]
+
+        start = timer()
         if distribution == "normal":
             # Normal (Gaussian)
             points = []
         else:
             # Even
             points = []
+        end = timer()
 
         self.ch.set_points(points)
         [self.plot_point(p) for p in points]
+
+        self.log("Generated {} points in {} ms".format(amount, int(end - start)))
 
     def pl_update_ui(self, pl, txt_points, replot=False, reset=False):
         # Toggle available points based on mode
