@@ -7,8 +7,10 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Rectangle, ConnectionPatch
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
+from PyQt5.QtCore import Qt
 
 from modes import points_lines as pl
+from modes import convex_hulls as ch
 
 
 class MainWindow(QWidget):
@@ -80,8 +82,53 @@ class MainWindow(QWidget):
         self.pl_update_ui(self.pl, self.txt_points)
 
         # Tab - Convex Hulls
+        self.ch = ch.ConvexHulls()
+
         tab_ch = QWidget()
         self.tabs.addTab(tab_ch, "Convex Hulls")
+
+        tab_ch_v = QVBoxLayout()
+
+        self.cb_distribution = QComboBox()
+        self.cb_distribution.setToolTip("Point distribution")
+        self.cb_distribution.addItems(["Even", "Normal (Gaussian)"])
+        self.cb_distribution.setMaximumWidth(100)
+        self.distributions = ["even", "normal"]  # Same indexes as text above
+
+        tab_ch_v_h = QHBoxLayout()
+        lbl_pamount = QLabel("Amount:")
+        self.txt_pamount = QLineEdit()
+        self.txt_pamount.setText("100")
+        self.txt_pamount.setToolTip("Amount of points")
+        self.txt_pamount.setMaximumWidth(50)
+        tab_ch_v_h.addWidget(lbl_pamount)
+        tab_ch_v_h.addWidget(self.txt_pamount)
+        tab_ch_v_h.addStretch()
+        tab_ch_v.addWidget(self.cb_distribution)
+        tab_ch_v.addLayout(tab_ch_v_h)
+
+        btn_pgenerate = QPushButton("Generate Points")
+        btn_pgenerate.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+        btn_pgenerate.clicked.connect(self.generate_points)
+
+        self.cb_convexalg = QComboBox()
+        self.cb_convexalg.setToolTip("Algorithm")
+        self.cb_convexalg.addItems(["Jarvis March", "Graham Scan", "Quickhull"])
+        self.cb_convexalg.setMaximumWidth(100)
+        self.cb_convexalg.currentIndexChanged.connect(self.ch_set_algorithm)
+
+        btn_convexcalc = QPushButton("Calculate")
+        btn_convexcalc.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+        btn_convexcalc.clicked.connect(self.ch_calculate)
+
+        tab_ch.layout = QHBoxLayout()
+        tab_ch.layout.addLayout(tab_ch_v)
+        tab_ch.layout.addWidget(btn_pgenerate)
+        tab_ch.layout.addStretch()
+        tab_ch.layout.addWidget(self.cb_convexalg)
+        tab_ch.layout.addWidget(btn_convexcalc)
+        tab_ch.layout.addStretch()
+        tab_ch.setLayout(tab_ch.layout)
 
         # Layout
         vbox = QVBoxLayout()
@@ -152,6 +199,29 @@ class MainWindow(QWidget):
         if not temp:
             self.lines.append((p1, p2))
 
+    def generate_points(self):
+        self.plot_clear(force=True)
+
+        if not self.txt_pamount.text():
+            print("Invalid amount of points!")
+            return
+
+        amount = int(self.txt_pamount.text())
+        if amount <= 0:
+            print("Invalid amount of points!")
+            return
+
+        distribution = self.distributions[self.cb_distribution.currentIndex()]
+        if distribution == "normal":
+            # Normal (Gaussian)
+            points = []
+        else:
+            # Even
+            points = []
+
+        self.ch.set_points(points)
+        [self.plot_point(p) for p in points]
+
     def pl_update_ui(self, pl, txt_points, replot=False, reset=False):
         # Toggle available points based on mode
         if pl.mode == 0:
@@ -219,6 +289,13 @@ class MainWindow(QWidget):
         self.plot_clear(force=True)
         self.pl.set_mode(self.cb_type.currentIndex())
         self.pl_update_ui(self.pl, self.txt_points)
+
+    def ch_calculate(self):
+        self.ch.calculate()
+
+    def ch_set_algorithm(self):
+        self.plot_clear(force=True)
+        self.ch.set_algorithm(self.cb_convexalg.currentIndex())
 
 
 if __name__ == "__main__":
