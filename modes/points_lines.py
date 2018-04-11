@@ -16,6 +16,13 @@ class PointsLines():
         points = np.array(points, dtype=float)
         self.p1, self.p2, self.p3, self.p4 = points
 
+    def get_point_indexes(self, p):
+        indexes = []
+        for i, point in enumerate([self.p1, self.p2, self.p3, self.p4]):
+            if np.array_equal(p, point):
+                indexes.append(i)
+        return indexes
+
     # Returns tuple of (numer)result and (string)text
     def calculate(self):
         if self.mode == 0:
@@ -39,8 +46,8 @@ class PointsLines():
             if itype == "coincident":
                 text = "Coincident on L1(P1,P2) and L2(P3,P4) between:\n"
 
-                equal = np.array_equal(self.p1, self.p3) and np.array(self.p2, self.p4)
-                equal_inv = np.array_equal(self.p1, self.p4) and np.array(self.p2, self.p3)
+                equal = np.array_equal(self.p1, self.p3) and np.array_equal(self.p2, self.p4)
+                equal_inv = np.array_equal(self.p1, self.p4) and np.array_equal(self.p2, self.p3)
                 if equal or equal_inv:
                     # Full coincident
                     text += "P1/P3 ({:g}, {:g}) and P2/P4 ({:g}, {:g})".format(
@@ -49,30 +56,32 @@ class PointsLines():
                     # Partial coincident
                     points = np.array([self.p1, self.p2, self.p3, self.p4])
                     points = points[np.lexsort((points[:, 0], points[:, 1]))]
-                    eq_p1 = "P1" if np.array_equal(points[1], self.p1) else ""
-                    eq_p1 = "P2" if np.array_equal(points[1], self.p2) else eq_p1
-                    eq_p1 = "P3" if np.array_equal(points[1], self.p3) else eq_p1
-                    eq_p1 = "P4" if np.array_equal(points[1], self.p4) else eq_p1
-                    eq_p2 = "P1" if np.array_equal(points[2], self.p1) else ""
-                    eq_p2 = "P2" if np.array_equal(points[2], self.p2) else eq_p2
-                    eq_p2 = "P3" if np.array_equal(points[2], self.p3) else eq_p2
-                    eq_p2 = "P4" if np.array_equal(points[2], self.p4) else eq_p2
-                    text += "{} ({:g}, {:g}) and {} ({:g}, {:g})".format(
-                            eq_p1, points[1][0], points[1][1], eq_p2, points[2][0], points[2][1])
+
+                    # Find equal points (for pretty output only)
+                    eq_p1 = self.get_point_indexes(points[1])[0]
+                    eq_p2 = self.get_point_indexes(points[2])[0]
+
+                    text += "P{} ({:g}, {:g}) and P{} ({:g}, {:g})".format(
+                            eq_p1 + 1, points[1][0], points[1][1],
+                            eq_p2 + 1, points[2][0], points[2][1])
 
                 return 0, text, points[1], points[2], "line"
+
+            if itype == "touch":
+                text = "L1(P1,P2) and L2(P3,P4) touch at:\nPI ({:g}, {:g})".format(
+                       pi[0], pi[1])
+
+                # Find equal points (for pretty output only)
+                eq_points = self.get_point_indexes(pi)
+                for eq_p in eq_points:
+                    text += " = P{}".format(eq_p + 1)
+
+                return 0, text, pi, None, "PI"
 
             if itype == "intersection":
                 text = "Intersection between L1(P1,P2) and L2(P3,P4):\n"
                 text += "PI ({:g}, {:g})".format(pi[0], pi[1])
-                eq_p1 = "P1" if np.array_equal(pi, self.p1) else ""
-                eq_p1 = "P2" if np.array_equal(pi, self.p2) else eq_p1
-                eq_p2 = "P3" if np.array_equal(pi, self.p3) else ""
-                eq_p2 = "P4" if np.array_equal(pi, self.p4) else eq_p2
-                if eq_p1:
-                    text += " = {}".format(eq_p1)
-                if eq_p2:
-                    text += " = {}".format(eq_p2)
+
                 return 0, text, pi, None, "PI"
 
             if itype == "parallel":
@@ -142,5 +151,9 @@ def intersection(p1, p2, p3, p4):
     # Calculate touching point
     x = p1[0] + ua * (p2[0] - p1[0])
     y = p1[1] + ua * (p2[1] - p1[1])
+    xy = np.array([x, y])
 
-    return np.array([x, y]), "intersection"
+    if ua == 0 or ua == 1 or ub == 0 or ub == 1:
+        return xy, "touch"
+    else:
+        return xy, "intersection"
