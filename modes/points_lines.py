@@ -53,19 +53,19 @@ class PointsLines():
                     text += "P1/P3 ({:g}, {:g}) and P2/P4 ({:g}, {:g})".format(
                             self.p1[0], self.p1[1], self.p2[0], self.p2[1])
                 else:
-                    # Partial coincident
+                    # Partial coincident (sort by x, then by y)
                     points = np.array([self.p1, self.p2, self.p3, self.p4])
-                    points = points[np.lexsort((points[:, 0], points[:, 1]))]
+                    p1, p2 = points[np.lexsort((points[:, 0], points[:, 1]))][1:-1]
 
                     # Find equal points (for pretty output only)
-                    eq_p1 = self.get_point_indexes(points[1])[0]
-                    eq_p2 = self.get_point_indexes(points[2])[0]
+                    eq_p1 = self.get_point_indexes(p1)[0]
+                    eq_p2 = self.get_point_indexes(p2)[0]
 
                     text += "P{} ({:g}, {:g}) and P{} ({:g}, {:g})".format(
-                            eq_p1 + 1, points[1][0], points[1][1],
-                            eq_p2 + 1, points[2][0], points[2][1])
+                            eq_p1 + 1, p1[0], p1[1],
+                            eq_p2 + 1, p2[0], p2[1])
 
-                return 0, text, points[1], points[2], "line"
+                return 0, text, p1, p2, "line"
 
             if itype == "touch":
                 text = "L1(P1,P2) and L2(P3,P4) touch at:\nPI ({:g}, {:g})".format(
@@ -133,12 +133,12 @@ def intersection(p1, p2, p3, p4):
     a = np.cross(p4 - p3, p1 - p3)
     b = np.cross(p2 - p1, p1 - p3)
 
-    # Lines coincide
-    if d == a == b == 0:
-        return None, "coincident"
-
-    # Lines are parallel
     if d == 0:
+        # Lines coincide
+        if a == b == 0:
+            return None, "coincident"
+
+        # Lines are parallel
         return None, "parallel"
 
     ua = a / d
