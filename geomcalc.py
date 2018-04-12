@@ -96,7 +96,7 @@ class MainWindow(QWidget):
         self.cb_distribution = QComboBox()
         self.cb_distribution.setToolTip("Point distribution")
         self.cb_distribution.addItems(["Uniform", "Normal (Gaussian)"])
-        self.cb_distribution.setMaximumWidth(100)
+        self.cb_distribution.setMaximumWidth(150)
 
         lbl_pamount = QLabel("Amount:")
         self.txt_pamount = QLineEdit()

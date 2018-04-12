@@ -15,5 +15,22 @@ class ConvexHulls():
         self.points = np.array(points, dtype=float)
 
     def calculate(self):
-        print("algorithm: {}".format(self.algorithm))
+        if self.algorithm == 0:
+            jarvis_march()
+        elif self.algorithm == 1:
+            graham_scan()
+        elif self.algorithm == 2:
+            quickhull()
         return 0
+
+
+def jarvis_march():
+    return 0
+
+
+def graham_scan():
+    return 0
+
+
+def quickhull():
+    return 0
