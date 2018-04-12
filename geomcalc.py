@@ -5,7 +5,7 @@ import numpy as np
 from timeit import default_timer as timer
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-from matplotlib.patches import Rectangle, ConnectionPatch
+from matplotlib import lines
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 
@@ -18,7 +18,7 @@ class MainWindow(QWidget):
         super().__init__()
 
         self.txt_points = []  # List of tuples (elements)
-        self.lines = []  # List of tuples (points)
+        self.lines = []  # List of lines
 
         self.initUI()
 
@@ -33,14 +33,13 @@ class MainWindow(QWidget):
         FigureCanvas(self.figure)
         self.figure.canvas.mpl_connect("button_press_event", self.on_plot_click)
         self.figure.canvas.mpl_connect("resize_event", self.on_plot_resize)
-
-        self.plot = self.figure.add_subplot(111)
-        self.plot.tick_params(axis="both", which="both", bottom=False, left=False, labelbottom=False, labelleft=False)
-        self.figure.tight_layout()
+        self.plot = None
+        self.plot_clear()
 
         # Tabs
         self.tabs = QTabWidget()
         self.tabs.setFixedHeight(100)
+        self.tabs.currentChanged.connect(lambda: self.plot_clear(force=True))
 
         # Tab - Points and lines
         self.pl = pl.PointsLines()
@@ -50,7 +49,7 @@ class MainWindow(QWidget):
 
         self.cb_type = QComboBox()
         self.cb_type.setToolTip("Input type")
-        self.cb_type.addItems(["1 point", "1 point, 1 line", "2 lines"])
+        self.cb_type.addItems(["2 points", "1 point, 1 line", "2 lines"])
         self.cb_type.currentIndexChanged.connect(self.pl_set_mode)
 
         tab_pl.layout = QHBoxLayout()
@@ -138,9 +137,9 @@ class MainWindow(QWidget):
 
         # Window
         self.setLayout(vbox)
-        self.setGeometry(50, 50, 1000, 800)
+        self.setGeometry(300, 50, 1000, 800)
         self.setMinimumWidth(800)
-        self.setMinimumHeight(600)
+        self.setMinimumHeight(800)
         self.setWindowTitle("Geometry Calculator")
         self.show()
 
@@ -151,61 +150,61 @@ class MainWindow(QWidget):
     def on_plot_click(self, event):
         if event.xdata is not None and event.ydata is not None:
             if self.tabs.currentIndex() == 0:
-                npatches = len(self.plot_get_points())
+                npatches = len(self.plot.get_lines())
                 if npatches > self.pl.mode + 1:
                     self.plot_clear()
                 self.plot_point((event.xdata, event.ydata), text="P", num=True)
                 if self.pl.mode == 1 and npatches == 2:
-                    self.plot_line(self.pl.p2, (event.xdata, event.ydata))
+                    self.plot_connection(self.pl.p2, (event.xdata, event.ydata))
                 elif self.pl.mode == 2:
                     if npatches == 1:
-                        self.plot_line(self.pl.p1, (event.xdata, event.ydata))
+                        self.plot_connection(self.pl.p1, (event.xdata, event.ydata))
                     elif npatches == 3:
-                        self.plot_line(self.pl.p3, (event.xdata, event.ydata))
+                        self.plot_connection(self.pl.p3, (event.xdata, event.ydata))
                 self.pl_update_ui(self.pl, self.txt_points, replot=False)
 
     def on_plot_resize(self, event):
         self.plot.set_xlim((0, event.width))
         self.plot.set_ylim((0, event.height))
 
-    def plot_get_points(self):
-        return [p for p in self.plot.patches if isinstance(p, Rectangle)]
-
-    def plot_get_lines(self):
-        return [p for p in self.plot.patches if isinstance(p, ConnectionPatch)]
-
     def plot_clear(self, force=False):
-        [patch.remove() for patch in self.plot.patches[::-1]]
-        [text.remove() for text in self.plot.texts[::-1]]
-        self.lines = []
+        self.figure.clf()
+        self.plot = self.figure.add_axes([0, 0, 1, 1])
+        self.plot.axis("off")
+
+        self.plot.set_xlim((0, self.width() - 22))
+        self.plot.set_ylim((0, self.height() - 234))
 
         if force:
             self.figure.canvas.draw()
 
-    def plot_point(self, p, text="", num=False, color="black"):
+    def plot_point(self, p, text="", num=False, color="black", instant=True):
         x, y = p
-        rect = Rectangle((int(x) - 2, int(y) - 2), 4, 4, color=color)
-        self.plot.add_patch(rect)
+        self.plot.plot(int(x), int(y), marker="o", markersize=2, color="black")
 
-        npatches = len(self.plot_get_points())
+        npatches = len(self.plot.get_lines())
         text = "{}{}".format(text, npatches if num else "")
-        self.plot.text(int(x) + 7, int(y) - 5, text, fontsize=9, color=color)
-        self.figure.canvas.draw()
+        self.plot.text(int(x) + 3, int(y) + 3, text, fontsize=9, color=color)
+        if instant:
+            self.figure.canvas.draw()
 
         if self.tabs.currentIndex() == 0 and npatches <= len(self.txt_points):
             self.txt_points[npatches - 1][0].setText(str(int(x)))
             self.txt_points[npatches - 1][1].setText(str(int(y)))
 
-    def plot_line(self, p1, p2, color="black", temp=False):
-        line = ConnectionPatch(p1, p2, coordsA="data", coordsB="data", color=color)
-        self.plot.add_patch(line)
+    def plot_line(self, x, y, color="black", temp=False):
+        line = lines.Line2D(x, y, color="black", linewidth=1)
+        self.plot.add_line(line)
         self.figure.canvas.draw()
 
         if not temp:
-            self.lines.append((p1, p2))
+            self.lines.append(line)
+
+    def plot_connection(self, p1, p2, color="black", temp=False):
+        self.plot_line([p1[0], p2[0]], [p1[1], p2[1]], color=color, temp=temp)
 
     def generate_points(self):
-        self.plot_clear(force=True)
+        self.plot_clear()
 
         if not self.txt_pamount.text():
             print("Invalid amount of points!")
@@ -215,18 +214,21 @@ class MainWindow(QWidget):
         distribution = self.cb_distribution.currentIndex()
 
         start = timer()
+        # Generate points to fit into smallest window size
         if distribution == 0:
             # Uniform
-            points = []
+            points = np.random.uniform(low=50.0, high=500.0, size=(amount, 2))
         else:
             # Normal (Gaussian)
-            points = []
+            points = np.random.normal(loc=300, scale=50.0, size=(amount, 2))
         end = timer()
+        points[:, 0] += 100  # X axis is longer, scale correctly in center of smallest window
 
         self.ch.set_points(points)
-        [self.plot_point(p) for p in points]
+        self.plot.scatter(points[:, 0], points[:, 1], marker="o", s=2, color="black")
+        self.figure.canvas.draw()
 
-        self.log("Generated {} points in {} ms".format(amount, int(end - start)))
+        self.log("Generated {} points in {} ms".format(amount, int((end - start) * 1000)))
 
     def pl_update_ui(self, pl, txt_points, replot=False, reset=False):
         # Toggle available points based on mode
@@ -255,17 +257,17 @@ class MainWindow(QWidget):
 
             if reset:
                 # Replot missing lines in case of reset
-                npatches = len(self.plot_get_points())
+                npatches = len(self.plot.get_lines())
                 if self.pl.mode > 0:
                     if npatches > 1:
                         if self.pl.mode == 1:
-                            self.plot_line(self.pl.p2, self.pl.p3)
+                            self.plot_connection(self.pl.p2, self.pl.p3)
                         else:
-                            self.plot_line(self.pl.p1, self.pl.p2)
+                            self.plot_connection(self.pl.p1, self.pl.p2)
                     if npatches > 3:
-                        self.plot_line(self.pl.p3, self.pl.p4)
+                        self.plot_connection(self.pl.p3, self.pl.p4)
             else:
-                [self.plot_line(line[0], line[1]) for line in lines]
+                [self.plot_line(line.get_xdata(), line.get_ydata()) for line in list(lines)]
 
     def pl_calculate(self):
         self.pl_update_ui(self.pl, self.txt_points, replot=True)
@@ -278,13 +280,13 @@ class MainWindow(QWidget):
 
         if p1 is not None:
             if point_txt == "line":
-                self.plot_line(p1, p2, color="red")
+                self.plot_connection(p1, p2, color="red")
             else:
                 self.plot_point(p1, text=point_txt, color="red")
                 if np.array_equal(p2, p1):
-                    self.plot_line(self.pl.p1, p1, temp=True)
+                    self.plot_connection(self.pl.p1, p1, temp=True)
                 elif p2 is not None:
-                    self.plot_line(self.pl.p1, p2, temp=True)
+                    self.plot_connection(self.pl.p1, p2, temp=True)
 
         msg.setText(text)
         msg.exec()

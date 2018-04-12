@@ -23,7 +23,7 @@ class PointsLines():
                 indexes.append(i)
         return indexes
 
-    # Returns tuple of (numer)result and (string)text
+    # Returns tuple of (number)result and (string)text
     def calculate(self):
         if self.mode == 0:
             distance = euclidean_dist(self.p1, self.p2)
