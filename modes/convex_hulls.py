@@ -105,12 +105,27 @@ def graham_scan(points, main):
     rands = np.random.choice(points.shape[0], 3, replace=False)
     o = np.mean([points[rands[0]], points[rands[1]], points[rands[2]]], axis=0)
 
-    if main is not None:
-        main.plot_point(o, text="O", color="blue")  # Debug
+    # if main is not None:
+    #     main.plot_point(o, text="O", color="blue")  # Debug
 
     start_polar = timer()
 
     # Create polar system and sort all points based on angle
+    angles = []
+    for p in points:
+        angle = np.arctan2(p[1] - o[1], p[0] - o[0])
+        if angle < 0:
+            angle += 2 * np.pi
+
+        if angle in angles:
+            i = angles.index(angle)
+            if pl.euclidean_dist(o, p) < pl.euclidean_dist(o, points[i]):
+                angles[i] = p
+        else:
+            angles.append(angle)
+
+    angles = np.array(angles)
+    points = points[angles.argsort()]
 
     end_polar = timer()
 
@@ -121,16 +136,33 @@ def graham_scan(points, main):
 
     end_extreme = timer()
 
-    if main is not None:
-        main.plot_point(e, text="E", color="blue")  # Debug
-
-    ch_points = np.array([e])
+    # if main is not None:
+    #     main.plot_point(e, text="E", color="blue")  # Debug
 
     start_other = timer()
 
     # Find all other points
+    i = np.where(points == e)[0][0]
+    p2 = None
+    j = 0
+    while not np.array_equal(p2, e) or j < 3:
+        i1, i2, i3 = i % len(points), (i + 1) % len(points), (i + 2) % len(points)
+        p1, p2, p3 = points[i1], points[i2], points[i3]
+        u = np.cross(p2 - p1, p3 - p1)
+        if u > 0:
+            # Point p2 is part of convex hull, keep and continue
+            i += 1
+            j += 1
+        else:
+            # Point p2 is not part of convex hull, remove and return
+            points = np.delete(points, (i2), axis=0)
+            angles = np.delete(angles, i2)
+            i -= 2
+            j -= 2
 
     end_other = timer()
+
+    ch_points = np.vstack((points, points[0]))
 
     if main is not None:
         time_polar = (end_polar - start_polar) * 1000

@@ -316,7 +316,6 @@ class MainWindow(QWidget):
             self.figure.canvas.draw()
 
     def ch_set_algorithm(self):
-        self.plot_clear(force=True)
         self.ch.set_algorithm(self.cb_convexalg.currentIndex())
 
 
