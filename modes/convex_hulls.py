@@ -31,6 +31,11 @@ def almost_equal(a, b):
     return np.abs(a - b) < 0.000001
 
 
+# Faster implementation of np.cross() returning magnitude directly
+def area_triangle(a, b, c):
+    return (a[0] - b[0]) * (c[1] - b[1]) - (a[1] - b[1]) * (c[0] - b[0])
+
+
 def jarvis_march(points, main=None):
     amount = len(points)
 
@@ -146,8 +151,7 @@ def graham_scan(points, main=None):
     while not np.array_equal(p2, e) or j < 3:
         i1, i2, i3 = e_i % len(points), (e_i + 1) % len(points), (e_i + 2) % len(points)
         p1, p2, p3 = points[i1], points[i2], points[i3]
-        # Check if counterclockwise or not (source: Wikipedia), no need to check do cross product
-        u = (p2[0] - p1[0]) * (p3[1] - p1[1]) - (p2[1] - p1[1]) * (p3[0] - p1[0])
+        u = area_triangle(p2, p1, p3)
         if u > 0:
             # Point p2 is part of convex hull, keep and continue
             e_i += 1
@@ -155,7 +159,6 @@ def graham_scan(points, main=None):
         else:
             # Point p2 is not part of convex hull, remove and return
             points = np.concatenate((points[:i2], points[(i2 + 1):]))
-            angles = np.concatenate((angles[:i2], angles[(i2 + 1):]))
             e_i -= 2
             j -= 2
 
@@ -200,7 +203,7 @@ def quickhull(points, main=None):
     s1 = []
     s2 = []
     for p in points:
-        u = np.cross(e1 - p, e2 - p)
+        u = area_triangle(e1, p, e2)
         if u > 0:  # Left
             s1.append(p)
             # if main is not None:
@@ -258,7 +261,7 @@ def quickhull_sub(s, e1, e2, main=None):
     # Find biggest triangle area for s
     max_area, max_p, max_i = -np.inf, None, -1
     for i, p in enumerate(s):
-        area = np.linalg.norm(np.cross(e1 - p, e2 - p))
+        area = area_triangle(e1, p, e2)
         if almost_equal(area, max_area):
             # Take biggest angle if same area
             a = p - e1  # Vector from e1 to point
@@ -286,8 +289,8 @@ def quickhull_sub(s, e1, e2, main=None):
     s1 = []
     s2 = []
     for p in s[:max_i] + s[(max_i + 1):]:
-        u1 = np.cross(e1 - p, max_p - p)
-        u2 = np.cross(max_p - p, e2 - p)
+        u1 = area_triangle(e1, p, max_p)
+        u2 = area_triangle(max_p, p, e2)
         if u1 > 0 and u2 < 0:  # Right of one line
             s1.append(p)
             # if main is not None:
