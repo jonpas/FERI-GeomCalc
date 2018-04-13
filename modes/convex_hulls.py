@@ -61,7 +61,7 @@ def jarvis_march(points, main=None):
     end_first = timer()
 
     ch_points = np.vstack((e, points[min_i]))
-    points = np.delete(points, (min_i), axis=0)
+    points = np.concatenate((points[:min_i], points[(min_i + 1):]))
 
     start_other = timer()
 
@@ -84,7 +84,7 @@ def jarvis_march(points, main=None):
                 min_angle, min_i = angle, i
 
         ch_points = np.vstack((ch_points, points[min_i]))
-        points = np.delete(points, (min_i), axis=0)
+        points = np.concatenate((points[:min_i], points[(min_i + 1):]))
         pi = ch_points[-1]
 
     end_other = timer()
@@ -120,13 +120,7 @@ def graham_scan(points, main=None):
         angle = np.arctan2(p[1] - o[1], p[0] - o[0])
         if angle < 0:
             angle += 2 * np.pi
-
-        if angle in angles:
-            i = angles.index(angle)
-            if pl.euclidean_dist(o, p) < pl.euclidean_dist(o, points[i]):
-                angles[i] = p
-        else:
-            angles.append(angle)
+        angles.append(angle)
 
     angles = np.array(angles)
     points = points[angles.argsort()]
@@ -136,7 +130,8 @@ def graham_scan(points, main=None):
     start_extreme = timer()
 
     # Find extreme point (start of convex hull)
-    e = points[np.lexsort((points[:, 0], points[:, 1]))][0]
+    e_i = np.lexsort((points[:, 0], points[:, 1]))[0]
+    e = points[e_i]
 
     end_extreme = timer()
 
@@ -146,22 +141,22 @@ def graham_scan(points, main=None):
     start_other = timer()
 
     # Find all other points
-    i = np.where(points == e)[0][0]
     p2 = None
     j = 0
     while not np.array_equal(p2, e) or j < 3:
-        i1, i2, i3 = i % len(points), (i + 1) % len(points), (i + 2) % len(points)
+        i1, i2, i3 = e_i % len(points), (e_i + 1) % len(points), (e_i + 2) % len(points)
         p1, p2, p3 = points[i1], points[i2], points[i3]
-        u = np.cross(p2 - p1, p3 - p1)
+        # Check if counterclockwise or not (source: Wikipedia), no need to check do cross product
+        u = (p2[0] - p1[0]) * (p3[1] - p1[1]) - (p2[1] - p1[1]) * (p3[0] - p1[0])
         if u > 0:
             # Point p2 is part of convex hull, keep and continue
-            i += 1
+            e_i += 1
             j += 1
         else:
             # Point p2 is not part of convex hull, remove and return
-            points = np.delete(points, (i2), axis=0)
-            angles = np.delete(angles, i2)
-            i -= 2
+            points = np.concatenate((points[:i2], points[(i2 + 1):]))
+            angles = np.concatenate((angles[:i2], angles[(i2 + 1):]))
+            e_i -= 2
             j -= 2
 
     end_other = timer()
@@ -188,7 +183,7 @@ def quickhull(points, main=None):
 
     # Find extreme points (start of convex hull)
     sort_i = np.lexsort((points[:, 1], points[:, 0]))
-    e1, e2 = points[sort_i][[0, -1]]
+    e1, e2 = points[sort_i[[0, -1]]]
 
     end_extreme = timer()
 
@@ -263,7 +258,7 @@ def quickhull_sub(s, e1, e2, main=None):
     # Find biggest triangle area for s
     max_area, max_p, max_i = -np.inf, None, -1
     for i, p in enumerate(s):
-        area = np.linalg.norm(np.cross(e1 - p, e2 - p)) / 2
+        area = np.linalg.norm(np.cross(e1 - p, e2 - p))
         if almost_equal(area, max_area):
             # Take biggest angle if same area
             a = p - e1  # Vector from e1 to point
@@ -286,12 +281,11 @@ def quickhull_sub(s, e1, e2, main=None):
     #     main.plot_connection(e2, max_p, color="blue", temp=True)  # Debug
 
     ch_points = np.array([max_p])
-    s = np.delete(s, (max_i), axis=0)
 
     # Split into 2 areas outside of triangle (ignoring points inside triangle)
     s1 = []
     s2 = []
-    for p in s:
+    for p in s[:max_i] + s[(max_i + 1):]:
         u1 = np.cross(e1 - p, max_p - p)
         u2 = np.cross(max_p - p, e2 - p)
         if u1 > 0 and u2 < 0:  # Right of one line
