@@ -88,14 +88,14 @@ class MainWindow(QWidget):
         self.pl_update_ui(self.pl, self.txt_points)
 
         # Tab - Convex Hulls
-        self.ch = ch.ConvexHulls()
+        self.ch = ch.ConvexHulls(self)
 
         tab_ch = QWidget()
         self.tabs.addTab(tab_ch, "Convex Hulls")
 
         self.cb_distribution = QComboBox()
         self.cb_distribution.setToolTip("Point distribution")
-        self.cb_distribution.addItems(["Uniform", "Normal (Gaussian)"])
+        self.cb_distribution.addItems(["Normal (Gaussian)", "Uniform"])
         self.cb_distribution.setMaximumWidth(150)
 
         lbl_pamount = QLabel("Amount:")
@@ -193,7 +193,7 @@ class MainWindow(QWidget):
             self.txt_points[npatches - 1][1].setText(str(int(y)))
 
     def plot_line(self, x, y, color="black", temp=False):
-        line = lines.Line2D(x, y, color="black", linewidth=1)
+        line = lines.Line2D(x, y, color=color, linewidth=1)
         self.plot.add_line(line)
         self.figure.canvas.draw()
 
@@ -216,11 +216,11 @@ class MainWindow(QWidget):
         start = timer()
         # Generate points to fit into smallest window size
         if distribution == 0:
-            # Uniform
-            points = np.random.uniform(low=50.0, high=500.0, size=(amount, 2))
-        else:
             # Normal (Gaussian)
             points = np.random.normal(loc=300, scale=50.0, size=(amount, 2))
+        else:
+            # Uniform
+            points = np.random.uniform(low=50.0, high=500.0, size=(amount, 2))
         end = timer()
         points[:, 0] += 100  # X axis is longer, scale correctly in center of smallest window
 
@@ -299,7 +299,17 @@ class MainWindow(QWidget):
         self.pl_update_ui(self.pl, self.txt_points)
 
     def ch_calculate(self):
-        self.ch.calculate()
+        # Redraw points (clean lines)
+        self.plot_clear()
+        self.plot.scatter(self.ch.points[:, 0], self.ch.points[:, 1], marker="o", s=2, color="black")
+        self.figure.canvas.draw()
+
+        # Calculate convex hull
+        conn_points = self.ch.calculate()
+        if conn_points.all():
+            # Draw convex hull
+            self.plot.plot(conn_points[:, 0], conn_points[:, 1], marker="o", markersize=2, linewidth=1, color="red")
+            self.figure.canvas.draw()
 
     def ch_set_algorithm(self):
         self.plot_clear(force=True)
