@@ -313,6 +313,7 @@ class MainWindow(QWidget):
         if ch_points.all():
             # Draw convex hull
             self.plot.plot(ch_points[:, 0], ch_points[:, 1], marker="o", markersize=2, linewidth=1, color="red")
+            # self.plot.scatter(ch_points[:, 0], ch_points[:, 1], marker="o", s=10, color="red")  # Debug
             self.figure.canvas.draw()
 
     def ch_set_algorithm(self):
