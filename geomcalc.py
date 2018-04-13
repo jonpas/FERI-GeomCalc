@@ -180,7 +180,7 @@ class MainWindow(QWidget):
 
     def plot_point(self, p, text="", num=False, color="black", instant=True):
         x, y = p
-        self.plot.plot(int(x), int(y), marker="o", markersize=2, color="black")
+        self.plot.plot(int(x), int(y), marker="o", markersize=2, color=color)
 
         npatches = len(self.plot.get_lines())
         text = "{}{}".format(text, npatches if num else "")
@@ -299,16 +299,20 @@ class MainWindow(QWidget):
         self.pl_update_ui(self.pl, self.txt_points)
 
     def ch_calculate(self):
+        if len(self.ch.points) == 0:
+            self.generate_points()
+        else:
+            self.plot_clear()
+
         # Redraw points (clean lines)
-        self.plot_clear()
         self.plot.scatter(self.ch.points[:, 0], self.ch.points[:, 1], marker="o", s=2, color="black")
         self.figure.canvas.draw()
 
         # Calculate convex hull
-        conn_points = self.ch.calculate()
-        if conn_points.all():
+        ch_points = self.ch.calculate()
+        if ch_points.all():
             # Draw convex hull
-            self.plot.plot(conn_points[:, 0], conn_points[:, 1], marker="o", markersize=2, linewidth=1, color="red")
+            self.plot.plot(ch_points[:, 0], ch_points[:, 1], marker="o", markersize=2, linewidth=1, color="red")
             self.figure.canvas.draw()
 
     def ch_set_algorithm(self):

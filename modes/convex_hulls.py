@@ -22,11 +22,9 @@ class ConvexHulls():
         if self.algorithm == 0:
             return jarvis_march(self.points, self.parent)
         elif self.algorithm == 1:
-            graham_scan(self.points)
+            return graham_scan(self.points, self.parent)
         elif self.algorithm == 2:
-            quickhull(self.points)
-
-        return np.array([[50, 50], [100, 100]])
+            return quickhull(self.points, self.parent)
 
 
 def almost_equal(a, b):
@@ -42,7 +40,8 @@ def jarvis_march(points, main):
 
     end_extreme = timer()
 
-    # main.plot_point(e, text="E", color="blue")  # Debug
+    # if main is not None:
+    #     main.plot_point(e, text="E", color="blue")  # Debug
 
     start_first = timer()
 
@@ -88,21 +87,98 @@ def jarvis_march(points, main):
 
     end_other = timer()
 
-    time_extreme = (end_extreme - start_extreme) * 1000
-    time_first = (end_first - start_first) * 1000
-    time_other = (end_other - start_other) * 1000
-    main.log("Calculated convex hull using Jarvis March algorithm in {} ms:"
-             .format(int(time_extreme + time_first + time_other)))
-    main.log("- Found extreme point in {} ms".format(int(time_extreme)))
-    main.log("- Found second point using extreme in {} ms".format(int(time_first)))
-    main.log("- Found all remaining points in {} ms".format(int(time_other)))
+    if main is not None:
+        time_extreme = (end_extreme - start_extreme) * 1000
+        time_first = (end_first - start_first) * 1000
+        time_other = (end_other - start_other) * 1000
+        main.log("Calculated convex hull on {} points using Jarvis March algorithm in {} ms:"
+                 .format(len(points), int(time_extreme + time_first + time_other)))
+        main.log("- Found extreme point in {} ms".format(int(time_extreme)))
+        main.log("- Found second point using extreme in {} ms".format(int(time_first)))
+        main.log("- Found all remaining points in {} ms".format(int(time_other)))
 
     return ch_points
 
 
-def graham_scan(points):
-    return 0
+def graham_scan(points, main):
+    # Approximate center of gravity
+    rands = np.random.choice(points.shape[0], 3, replace=False)
+    o = np.mean([points[rands[0]], points[rands[1]], points[rands[2]]], axis=0)
+
+    if main is not None:
+        main.plot_point(o, text="O", color="blue")  # Debug
+
+    start_polar = timer()
+
+    # Create polar system and sort all points based on angle
+
+    end_polar = timer()
+
+    start_extreme = timer()
+
+    # Find extreme point (start of convex hull)
+    e = points[np.lexsort((points[:, 0], points[:, 1]))][0]
+
+    end_extreme = timer()
+
+    if main is not None:
+        main.plot_point(e, text="E", color="blue")  # Debug
+
+    ch_points = np.array([e])
+
+    start_other = timer()
+
+    # Find all other points
+
+    end_other = timer()
+
+    if main is not None:
+        time_polar = (end_polar - start_polar) * 1000
+        time_extreme = (end_extreme - start_extreme) * 1000
+        time_other = (end_other - start_other) * 1000
+        main.log("Calculated convex hull on {} points using Graham Scan algorithm in {} ms:"
+                 .format(len(points), int(time_polar + time_extreme + time_other)))
+        main.log("- Created and sorted polar system {} ms".format(int(time_polar)))
+        main.log("- Found extreme point in {} ms".format(int(time_extreme)))
+        main.log("- Found all remaining points in {} ms".format(int(time_other)))
+
+    return ch_points
 
 
-def quickhull(points):
-    return 0
+def quickhull(points, main):
+    start_extreme = timer()
+
+    # Find extreme points (start of convex hull)
+    el, er = points[np.lexsort((points[:, 1], points[:, 0]))][[0, -1]]
+
+    end_extreme = timer()
+
+    if main is not None:
+        main.plot_point(el, text="EL", color="blue")  # Debug
+        main.plot_point(er, text="ER", color="blue")  # Debug
+
+    ch_points = np.vstack((el, er))
+
+    start_first = timer()
+
+    # Split into 2 areas (start of recursion)
+
+    end_first = timer()
+
+    start_other = timer()
+
+    # Find all other points
+
+    end_other = timer()
+
+    if main is not None:
+        time_extreme = (end_extreme - start_extreme) * 1000
+        time_first = (end_first - start_first) * 1000
+        time_other = (end_other - start_other) * 1000
+        main.log("Calculated convex hull on {} points using Quickhull algorithm in {} ms:"
+                 .format(len(points), int(time_extreme + time_first + time_other)))
+        main.log("- Found first extreme points in {} ms".format(int(time_extreme)))
+        main.log("- Split first areas in {} ms".format(int(time_first)))
+        main.log("- Found all remaining points in {} ms".format(int(time_other)))
+
+    return ch_points
