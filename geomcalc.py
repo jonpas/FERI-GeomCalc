@@ -153,7 +153,7 @@ class MainWindow(QWidget):
                 npatches = len(self.plot_get_points())
                 if npatches > self.pl.mode + 1:
                     self.plot_clear()
-                self.plot_point((event.xdata, event.ydata), text="P{}".format(npatches + 1))
+                self.plot_point((event.xdata, event.ydata), text="P", num=True)
                 if self.pl.mode == 1 and npatches == 2:
                     self.plot_connection(self.pl.p2, (event.xdata, event.ydata))
                 elif self.pl.mode == 2:
@@ -275,7 +275,6 @@ class MainWindow(QWidget):
                     if npatches > 3:
                         self.plot_connection(self.pl.p3, self.pl.p4)
             else:
-                print(lines)
                 [self.plot_line(line.get_xdata(), line.get_ydata()) for line in list(lines)]
 
     def pl_calculate(self):
