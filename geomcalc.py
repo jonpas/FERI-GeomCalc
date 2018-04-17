@@ -150,10 +150,10 @@ class MainWindow(QWidget):
     def on_plot_click(self, event):
         if event.xdata is not None and event.ydata is not None:
             if self.tabs.currentIndex() == 0:
-                npatches = len(self.plot.get_lines())
+                npatches = len(self.plot_get_points())
                 if npatches > self.pl.mode + 1:
                     self.plot_clear()
-                self.plot_point((event.xdata, event.ydata), text="P", num=True)
+                self.plot_point((event.xdata, event.ydata), text="P{}".format(npatches + 1))
                 if self.pl.mode == 1 and npatches == 2:
                     self.plot_connection(self.pl.p2, (event.xdata, event.ydata))
                 elif self.pl.mode == 2:
@@ -175,14 +175,16 @@ class MainWindow(QWidget):
         self.plot.set_xlim((0, self.width() - 22))
         self.plot.set_ylim((0, self.height() - 234))
 
+        self.lines = []
+
         if force:
             self.figure.canvas.draw()
 
     def plot_point(self, p, text="", num=False, color="black", instant=True):
         x, y = p
-        self.plot.plot(int(x), int(y), marker="o", markersize=2, color=color)
+        self.plot.scatter(int(x), int(y), marker="o", s=2, color=color)
 
-        npatches = len(self.plot.get_lines())
+        npatches = len(self.plot_get_points())
         text = "{}{}".format(text, npatches if num else "")
         self.plot.text(int(x) + 3, int(y) + 3, text, fontsize=9, color=color)
         if instant:
@@ -202,6 +204,12 @@ class MainWindow(QWidget):
 
     def plot_connection(self, p1, p2, color="black", temp=False):
         self.plot_line([p1[0], p2[0]], [p1[1], p2[1]], color=color, temp=temp)
+
+    def plot_get_points(self):
+        return self.plot.collections  # ax.scatter() + ...
+
+    def plot_get_lines(self):
+        return self.plot.get_lines()  # ax.plot() + lines.Line2D() + ...
 
     def generate_points(self):
         self.plot_clear()
@@ -257,7 +265,7 @@ class MainWindow(QWidget):
 
             if reset:
                 # Replot missing lines in case of reset
-                npatches = len(self.plot.get_lines())
+                npatches = len(self.plot.get_points())
                 if self.pl.mode > 0:
                     if npatches > 1:
                         if self.pl.mode == 1:
@@ -267,6 +275,7 @@ class MainWindow(QWidget):
                     if npatches > 3:
                         self.plot_connection(self.pl.p3, self.pl.p4)
             else:
+                print(lines)
                 [self.plot_line(line.get_xdata(), line.get_ydata()) for line in list(lines)]
 
     def pl_calculate(self):
