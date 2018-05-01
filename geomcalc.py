@@ -11,6 +11,7 @@ from PyQt5.QtGui import *
 
 from modes import points_lines as pl
 from modes import convex_hulls as ch
+from modes import plane_triangulation as pt
 
 
 class MainWindow(QWidget):
@@ -34,7 +35,6 @@ class MainWindow(QWidget):
         self.figure.canvas.mpl_connect("button_press_event", self.on_plot_click)
         self.figure.canvas.mpl_connect("resize_event", self.on_plot_resize)
         self.plot = None
-        self.plot_clear()
 
         # Tabs
         self.tabs = QTabWidget()
@@ -93,21 +93,21 @@ class MainWindow(QWidget):
         tab_ch = QWidget()
         self.tabs.addTab(tab_ch, "Convex Hulls")
 
-        self.cb_distribution = QComboBox()
-        self.cb_distribution.setToolTip("Point distribution")
-        self.cb_distribution.addItems(["Normal (Gaussian)", "Uniform"])
-        self.cb_distribution.setMaximumWidth(150)
+        self.cb_ch_distribution = QComboBox()
+        self.cb_ch_distribution.setToolTip("Point distribution")
+        self.cb_ch_distribution.addItems(["Normal (Gaussian)", "Uniform"])
+        self.cb_ch_distribution.setMaximumWidth(150)
 
-        lbl_pamount = QLabel("Amount:")
-        self.txt_pamount = QLineEdit()
-        self.txt_pamount.setText("100")
-        self.txt_pamount.setToolTip("Amount of points")
-        self.txt_pamount.setMaximumWidth(50)
-        self.txt_pamount.setValidator(QIntValidator(0, 2147483647))
+        lbl_ch_pamount = QLabel("Amount:")
+        self.txt_ch_pamount = QLineEdit()
+        self.txt_ch_pamount.setText("100")
+        self.txt_ch_pamount.setToolTip("Amount of points")
+        self.txt_ch_pamount.setMaximumWidth(50)
+        self.txt_ch_pamount.setValidator(QIntValidator(0, 2147483647))
 
-        btn_pgenerate = QPushButton("Generate Points")
-        btn_pgenerate.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
-        btn_pgenerate.clicked.connect(self.generate_points)
+        btn_ch_pgenerate = QPushButton("Generate Points")
+        btn_ch_pgenerate.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+        btn_ch_pgenerate.clicked.connect(self.ch_generate_points)
 
         self.cb_convexalg = QComboBox()
         self.cb_convexalg.setToolTip("Algorithm")
@@ -120,14 +120,56 @@ class MainWindow(QWidget):
         btn_convexcalc.clicked.connect(self.ch_calculate)
 
         tab_ch.layout = QHBoxLayout()
-        tab_ch.layout.addWidget(self.cb_distribution)
-        tab_ch.layout.addWidget(lbl_pamount)
-        tab_ch.layout.addWidget(self.txt_pamount)
-        tab_ch.layout.addWidget(btn_pgenerate)
+        tab_ch.layout.addWidget(self.cb_ch_distribution)
+        tab_ch.layout.addWidget(lbl_ch_pamount)
+        tab_ch.layout.addWidget(self.txt_ch_pamount)
+        tab_ch.layout.addWidget(btn_ch_pgenerate)
         tab_ch.layout.addStretch()
         tab_ch.layout.addWidget(self.cb_convexalg)
         tab_ch.layout.addWidget(btn_convexcalc)
         tab_ch.setLayout(tab_ch.layout)
+
+        # Tab - Plane Triangulation
+        self.pt = pt.PlaneTriangulation(self)
+
+        tab_pt = QWidget()
+        self.tabs.addTab(tab_pt, "Plane Triangulation")
+
+        self.cb_pt_distribution = QComboBox()
+        self.cb_pt_distribution.setToolTip("Point distribution")
+        self.cb_pt_distribution.addItems(["Normal (Gaussian)", "Uniform"])
+        self.cb_pt_distribution.setMaximumWidth(150)
+
+        lbl_pt_pamount = QLabel("Amount:")
+        self.txt_pt_pamount = QLineEdit()
+        self.txt_pt_pamount.setText("100")
+        self.txt_pt_pamount.setToolTip("Amount of points")
+        self.txt_pt_pamount.setMaximumWidth(50)
+        self.txt_pt_pamount.setValidator(QIntValidator(0, 2147483647))
+
+        btn_pt_pgenerate = QPushButton("Generate Points")
+        btn_pt_pgenerate.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+        btn_pt_pgenerate.clicked.connect(self.pt_generate_points)
+
+        self.cb_trialg = QComboBox()
+        self.cb_trialg.setToolTip("Algorithm")
+        self.cb_trialg.addItems(["Minimum-Weight Triangulation", "Hamiltonian Path"])
+        self.cb_trialg.setMaximumWidth(200)
+        self.cb_trialg.currentIndexChanged.connect(self.pt_set_algorithm)
+
+        btn_tricalc = QPushButton("Calculate")
+        btn_tricalc.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+        btn_tricalc.clicked.connect(self.pt_calculate)
+
+        tab_pt.layout = QHBoxLayout()
+        tab_pt.layout.addWidget(self.cb_pt_distribution)
+        tab_pt.layout.addWidget(lbl_pt_pamount)
+        tab_pt.layout.addWidget(self.txt_pt_pamount)
+        tab_pt.layout.addWidget(btn_pt_pgenerate)
+        tab_pt.layout.addStretch()
+        tab_pt.layout.addWidget(self.cb_trialg)
+        tab_pt.layout.addWidget(btn_tricalc)
+        tab_pt.setLayout(tab_pt.layout)
 
         # Layout
         vbox = QVBoxLayout()
@@ -211,33 +253,6 @@ class MainWindow(QWidget):
     def plot_get_lines(self):
         return self.plot.get_lines()  # ax.plot() + lines.Line2D() + ...
 
-    def generate_points(self):
-        self.plot_clear()
-
-        if not self.txt_pamount.text():
-            print("Invalid amount of points!")
-            return
-
-        amount = int(self.txt_pamount.text())
-        distribution = self.cb_distribution.currentIndex()
-
-        start = timer()
-        # Generate points to fit into smallest window size
-        if distribution == 0:
-            # Normal (Gaussian)
-            points = np.random.normal(loc=300, scale=50.0, size=(amount, 2))
-        else:
-            # Uniform
-            points = np.random.uniform(low=50.0, high=500.0, size=(amount, 2))
-        end = timer()
-        points[:, 0] += 100  # X axis is longer, scale correctly in center of smallest window
-
-        self.ch.set_points(points)
-        self.plot.scatter(points[:, 0], points[:, 1], marker="o", s=2, color="black")
-        self.figure.canvas.draw()
-
-        self.log("Generated {} points in {} ms".format(amount, int((end - start) * 1000)))
-
     def pl_update_ui(self, pl, txt_points, replot=False, reset=False):
         # Toggle available points based on mode
         if pl.mode == 0:
@@ -306,6 +321,33 @@ class MainWindow(QWidget):
         self.pl.set_mode(self.cb_type.currentIndex())
         self.pl_update_ui(self.pl, self.txt_points)
 
+    def ch_generate_points(self):
+        self.plot_clear()
+
+        if not self.txt_ch_pamount.text():
+            print("Invalid amount of points!")
+            return
+
+        amount = int(self.txt_ch_pamount.text())
+        distribution = self.cb_ch_distribution.currentIndex()
+
+        start = timer()
+        # Generate points to fit into smallest window size
+        if distribution == 0:
+            # Normal (Gaussian)
+            points = np.random.normal(loc=300, scale=50.0, size=(amount, 2))
+        else:
+            # Uniform
+            points = np.random.uniform(low=50.0, high=500.0, size=(amount, 2))
+        end = timer()
+        points[:, 0] += 100  # X axis is longer, scale correctly in center of smallest window
+
+        self.ch.set_points(points)
+        self.plot.scatter(points[:, 0], points[:, 1], marker="o", s=2, color="black")
+        self.figure.canvas.draw()
+
+        self.log("Generated {} points in {} ms".format(amount, int((end - start) * 1000)))
+
     def ch_calculate(self):
         if len(self.ch.points) == 0:
             self.generate_points()
@@ -326,6 +368,59 @@ class MainWindow(QWidget):
 
     def ch_set_algorithm(self):
         self.ch.set_algorithm(self.cb_convexalg.currentIndex())
+
+    def pt_generate_points(self):
+        self.plot_clear()
+
+        if not self.txt_pt_pamount.text():
+            print("Invalid amount of points!")
+            return
+
+        amount = int(self.txt_pt_pamount.text())
+        distribution = self.cb_pt_distribution.currentIndex()
+
+        start = timer()
+        # Generate points to fit into smallest window size
+        if distribution == 0:
+            # Normal (Gaussian)
+            points = np.random.normal(loc=300, scale=50.0, size=(amount, 2))
+        else:
+            # Uniform
+            points = np.random.uniform(low=50.0, high=500.0, size=(amount, 2))
+        end = timer()
+        points[:, 0] += 100  # X axis is longer, scale correctly in center of smallest window
+
+        self.pt.set_points(points)
+        self.plot.scatter(points[:, 0], points[:, 1], marker="o", s=2, color="black")
+        self.figure.canvas.draw()
+
+        self.log("Generated {} points in {} ms".format(amount, int((end - start) * 1000)))
+
+    def pt_calculate(self):
+        if len(self.pt.points) == 0:
+            self.generate_points()
+        else:
+            self.plot_clear()
+
+        # Redraw points (clean lines)
+        self.plot.scatter(self.pt.points[:, 0], self.pt.points[:, 1], marker="o", s=2, color="black")
+        self.figure.canvas.draw()
+
+        # Calculate convex hull
+        start = timer()
+        pt_points = self.pt.calculate()
+        end = timer()
+        if pt_points.all():
+            # Draw convex hull
+            self.plot.plot(pt_points[:, 0], pt_points[:, 1], marker="o", markersize=2, linewidth=1, color="red")
+            # self.plot.scatter(pt_points[:, 0], pt_points[:, 1], marker="o", s=10, color="red")  # Debug
+            self.figure.canvas.draw()
+
+        self.log("Calculated plane triangulation on {} points using {} algorithm in {} ms".format(
+                 len(self.pt.points), self.cb_trialg.currentText(), int((end - start) * 1000)))
+
+    def pt_set_algorithm(self):
+        self.pt.set_algorithm(self.cb_trialg.currentIndex())
 
 
 if __name__ == "__main__":
