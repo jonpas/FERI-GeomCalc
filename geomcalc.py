@@ -253,6 +253,26 @@ class MainWindow(QWidget):
     def plot_get_lines(self):
         return self.plot.get_lines()  # ax.plot() + lines.Line2D() + ...
 
+    def generate_points(self, amount, distribution):
+        self.plot_clear()
+
+        start = timer()
+        # Generate points to fit into smallest window size
+        if distribution == 0:
+            # Normal (Gaussian)
+            points = np.random.normal(loc=300, scale=50.0, size=(amount, 2))
+        else:
+            # Uniform
+            points = np.random.uniform(low=50.0, high=500.0, size=(amount, 2))
+        points[:, 0] += 100  # X axis is longer, scale correctly in center of smallest window
+        end = timer()
+
+        self.plot.scatter(points[:, 0], points[:, 1], marker="o", s=2, color="black")
+        self.figure.canvas.draw()
+
+        self.log("Generated {} points in {} ms".format(amount, int((end - start) * 1000)))
+        return points
+
     def pl_update_ui(self, pl, txt_points, replot=False, reset=False):
         # Toggle available points based on mode
         if pl.mode == 0:
@@ -322,8 +342,6 @@ class MainWindow(QWidget):
         self.pl_update_ui(self.pl, self.txt_points)
 
     def ch_generate_points(self):
-        self.plot_clear()
-
         if not self.txt_ch_pamount.text():
             print("Invalid amount of points!")
             return
@@ -331,26 +349,12 @@ class MainWindow(QWidget):
         amount = int(self.txt_ch_pamount.text())
         distribution = self.cb_ch_distribution.currentIndex()
 
-        start = timer()
-        # Generate points to fit into smallest window size
-        if distribution == 0:
-            # Normal (Gaussian)
-            points = np.random.normal(loc=300, scale=50.0, size=(amount, 2))
-        else:
-            # Uniform
-            points = np.random.uniform(low=50.0, high=500.0, size=(amount, 2))
-        end = timer()
-        points[:, 0] += 100  # X axis is longer, scale correctly in center of smallest window
-
+        points = self.generate_points(amount, distribution)
         self.ch.set_points(points)
-        self.plot.scatter(points[:, 0], points[:, 1], marker="o", s=2, color="black")
-        self.figure.canvas.draw()
-
-        self.log("Generated {} points in {} ms".format(amount, int((end - start) * 1000)))
 
     def ch_calculate(self):
         if len(self.ch.points) == 0:
-            self.generate_points()
+            self.ch_generate_points()
         else:
             self.plot_clear()
 
@@ -370,8 +374,6 @@ class MainWindow(QWidget):
         self.ch.set_algorithm(self.cb_convexalg.currentIndex())
 
     def pt_generate_points(self):
-        self.plot_clear()
-
         if not self.txt_pt_pamount.text():
             print("Invalid amount of points!")
             return
@@ -379,26 +381,12 @@ class MainWindow(QWidget):
         amount = int(self.txt_pt_pamount.text())
         distribution = self.cb_pt_distribution.currentIndex()
 
-        start = timer()
-        # Generate points to fit into smallest window size
-        if distribution == 0:
-            # Normal (Gaussian)
-            points = np.random.normal(loc=300, scale=50.0, size=(amount, 2))
-        else:
-            # Uniform
-            points = np.random.uniform(low=50.0, high=500.0, size=(amount, 2))
-        end = timer()
-        points[:, 0] += 100  # X axis is longer, scale correctly in center of smallest window
-
+        points = self.generate_points(amount, distribution)
         self.pt.set_points(points)
-        self.plot.scatter(points[:, 0], points[:, 1], marker="o", s=2, color="black")
-        self.figure.canvas.draw()
-
-        self.log("Generated {} points in {} ms".format(amount, int((end - start) * 1000)))
 
     def pt_calculate(self):
         if len(self.pt.points) == 0:
-            self.generate_points()
+            self.pt_generate_points()
         else:
             self.plot_clear()
 
