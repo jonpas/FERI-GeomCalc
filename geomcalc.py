@@ -300,7 +300,7 @@ class MainWindow(QWidget):
 
             if reset:
                 # Replot missing lines in case of reset
-                npatches = len(self.plot.get_points())
+                npatches = len(self.plot_get_points())
                 if self.pl.mode > 0:
                     if npatches > 1:
                         if self.pl.mode == 1:
@@ -394,14 +394,14 @@ class MainWindow(QWidget):
         self.plot.scatter(self.pt.points[:, 0], self.pt.points[:, 1], marker="o", s=2, color="black")
         self.figure.canvas.draw()
 
-        # Calculate convex hull
+        # Calculate plane triangulation
         start = timer()
-        pt_points = self.pt.calculate()
+        pt_lines = self.pt.calculate()
         end = timer()
-        if pt_points.all():
-            # Draw convex hull
-            self.plot.plot(pt_points[:, 0], pt_points[:, 1], marker="o", markersize=2, linewidth=1, color="red")
-            # self.plot.scatter(pt_points[:, 0], pt_points[:, 1], marker="o", s=10, color="red")  # Debug
+        if pt_lines.any():
+            # Draw plane triangulation
+            for line in pt_lines:
+                self.plot_connection(line[0], line[1], color="red")
             self.figure.canvas.draw()
 
         self.log("Calculated plane triangulation on {} points using {} algorithm in {} ms".format(

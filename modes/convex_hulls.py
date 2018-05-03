@@ -110,6 +110,11 @@ def jarvis_march(points, main=None):
 def graham_scan(points, main=None):
     amount = len(points)
 
+    if amount < 3:
+        if main is not None:
+            main.log("Calculated convex hull on {} points using Graham Scan algorithm in 0 ms:".format(amount))
+        return np.vstack((points, points[0]))  # Connect first and last
+
     # Approximate center of gravity
     rands = np.random.choice(points.shape[0], 3, replace=False)
     o = np.mean([points[rands[0]], points[rands[1]], points[rands[2]]], axis=0)
@@ -181,6 +186,11 @@ def graham_scan(points, main=None):
 
 def quickhull(points, main=None):
     amount = len(points)
+
+    if amount < 3:
+        if main is not None:
+            main.log("Calculated convex hull on {} points using Quickhull algorithm in 0 ms:".format(amount))
+        return np.vstack((points, points[0]))  # Connect first and last
 
     start_extreme = timer()
 
