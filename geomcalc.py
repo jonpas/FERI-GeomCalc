@@ -142,7 +142,7 @@ class MainWindow(QWidget):
 
         lbl_pt_pamount = QLabel("Amount:")
         self.txt_pt_pamount = QLineEdit()
-        self.txt_pt_pamount.setText("100")
+        self.txt_pt_pamount.setText("10")
         self.txt_pt_pamount.setToolTip("Amount of points")
         self.txt_pt_pamount.setMaximumWidth(50)
         self.txt_pt_pamount.setValidator(QIntValidator(0, 2147483647))

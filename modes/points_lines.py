@@ -3,7 +3,7 @@
 import math
 import numpy as np
 
-from modes import convex_hulls as ch
+import common as cm
 
 
 class PointsLines():
@@ -135,9 +135,9 @@ def intersection(p1, p2, p3, p4):
     a = np.cross(p4 - p3, p1 - p3)
     b = np.cross(p2 - p1, p1 - p3)
 
-    if ch.almost_equal(d, 0):
+    if cm.almost_equal(d, 0):
         # Lines coincide
-        if ch.almost_equal(ch.almost_equal(a, b), 0):
+        if cm.almost_equal(cm.almost_equal(a, b), 0):
             return None, "coincident"
 
         # Lines are parallel
@@ -155,7 +155,7 @@ def intersection(p1, p2, p3, p4):
     y = p1[1] + ua * (p2[1] - p1[1])
     xy = np.array([x, y])
 
-    if ch.almost_equal(ua, 0) or ch.almost_equal(ua, 1) or ch.almost_equal(ub, 0) or ch.almost_equal(ub, 1):
+    if cm.almost_equal(ua, 0) or cm.almost_equal(ua, 1) or cm.almost_equal(ub, 0) or cm.almost_equal(ub, 1):
         return xy, "touch"
     else:
         return xy, "intersection"
