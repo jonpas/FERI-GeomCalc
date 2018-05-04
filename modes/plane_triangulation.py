@@ -20,9 +20,9 @@ class PlaneTriangulation():
 
     def calculate(self):
         if self.algorithm == 0:
-            return np.array([]), mwt(self.points)
+            return mwt(self.points), (np.array([]), np.array([]))
         elif self.algorithm == 1:
-            return hamiltonian_path(self.points, main=self.parent)
+            return np.array([]), hamiltonian_path(self.points, main=self.parent)
 
 
 def mwt(points):

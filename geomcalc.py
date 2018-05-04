@@ -396,18 +396,25 @@ class MainWindow(QWidget):
 
         # Calculate plane triangulation
         start = timer()
-        s_points, pt_lines = self.pt.calculate()  # Spiral points, Triangulation points
+        pt_lines, (s_points, pt_points) = self.pt.calculate()  # PT lines (MWT), Spiral points, PT points (Hamiltonian)
         end = timer()
 
+        # Draw Minimum-Weight triangulation lines
+        if pt_lines.any():
+            for line in pt_lines:
+                self.plot_connection(line[0], line[1], color="red")
+
         # Draw spiral
-        self.plot.plot(s_points[:, 0], s_points[:, 1], marker="o", markersize=1, linewidth=1, color="black")
-        # for i, p in enumerate(s_points):
-        #     self.plot_point(p, text=i)  # Debug
+        if s_points.any():
+            self.plot.plot(s_points[:, 0], s_points[:, 1], marker="o", markersize=1, linewidth=1, color="black")
+            # for i, p in enumerate(s_points):
+            #     self.plot_point(p, text=i)  # Debug
 
         # Draw plane triangulation
-        self.plot.plot(pt_lines[:, 0], pt_lines[:, 1], marker="o", markersize=0.5, linewidth=0.5, color="red")
-        # for i, p in enumerate(pt_lines):
-        #     self.plot_point(p, text=i)  # Debug
+        if pt_points.any():
+            self.plot.plot(pt_points[:, 0], pt_points[:, 1], marker="o", markersize=0.5, linewidth=0.5, color="red")
+            # for i, p in enumerate(pt_points):
+            #     self.plot_point(p, text=i)  # Debug
 
         self.figure.canvas.draw()
 
