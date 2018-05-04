@@ -153,8 +153,8 @@ class MainWindow(QWidget):
 
         self.cb_trialg = QComboBox()
         self.cb_trialg.setToolTip("Algorithm")
-        self.cb_trialg.addItems(["Minimum-Weight Triangulation", "Hamiltonian Path"])
-        self.cb_trialg.setMaximumWidth(200)
+        self.cb_trialg.addItems(["Minimum-Weight", "Hamiltonian Path"])
+        self.cb_trialg.setMaximumWidth(150)
         self.cb_trialg.currentIndexChanged.connect(self.pt_set_algorithm)
 
         btn_tricalc = QPushButton("Calculate")
@@ -396,13 +396,20 @@ class MainWindow(QWidget):
 
         # Calculate plane triangulation
         start = timer()
-        pt_lines = self.pt.calculate()
+        s_points, pt_lines = self.pt.calculate()  # Spiral points, Triangulation points
         end = timer()
-        if pt_lines.any():
-            # Draw plane triangulation
-            for line in pt_lines:
-                self.plot_connection(line[0], line[1], color="red")
-            self.figure.canvas.draw()
+
+        # Draw spiral
+        self.plot.plot(s_points[:, 0], s_points[:, 1], marker="o", markersize=1, linewidth=1, color="black")
+        # for i, p in enumerate(s_points):
+        #     self.plot_point(p, text=i)  # Debug
+
+        # Draw plane triangulation
+        self.plot.plot(pt_lines[:, 0], pt_lines[:, 1], marker="o", markersize=0.5, linewidth=0.5, color="red")
+        # for i, p in enumerate(pt_lines):
+        #     self.plot_point(p, text=i)  # Debug
+
+        self.figure.canvas.draw()
 
         self.log("Calculated plane triangulation on {} points using {} algorithm in {} ms".format(
                  len(self.pt.points), self.cb_trialg.currentText(), int((end - start) * 1000)))
