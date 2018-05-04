@@ -131,9 +131,9 @@ def orth_projection(p1, p2, p3):
 
 
 def intersection(p1, p2, p3, p4):
-    d = np.cross(p2 - p1, p4 - p3)
-    a = np.cross(p4 - p3, p1 - p3)
-    b = np.cross(p2 - p1, p1 - p3)
+    d = cm.area_rectangle(p2, p1, p4, p3)
+    a = cm.area_rectangle(p4, p3, p1, p3)
+    b = cm.area_rectangle(p2, p1, p1, p3)
 
     if cm.almost_equal(d, 0):
         # Lines coincide
