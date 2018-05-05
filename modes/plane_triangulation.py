@@ -129,12 +129,27 @@ def hamiltonian_path(points, main=None):
         # Remove convex hull points from left-over points
         points = np.array([p for p in points if p not in ch_p])
 
+    # Exit if not enough convex hulls for triangulation
+    if len(ch_points) < 2:
+        return np.array(s_points), np.array([])
+
     # Generate generalized triangle strip
     # Indexes of last point in first hull, first points in second and first hulls
     a, b, c = len(ch_points[0]) - 1, len(ch_points[0]), 0
     pt_points = [s_points[a], s_points[b], s_points[c]]
 
-    while a != b:
+    # Walk path until last 2 indexes are one apart
+    while b - 1 != c:
+        # Move to next triangle
+        a, b = b, c
+        c = a + 1
+
+        # Degenerate on final point
+        if c >= len(s_points):
+            c = a  # Swap to valid index (degenerate)
+            pt_points.append(s_points[c])
+            continue
+
         # Check if new line intersects spiral list or already created lines
         line = [pt_points[-1], s_points[c]]
         intersection = False
@@ -150,19 +165,10 @@ def hamiltonian_path(points, main=None):
                     intersection = True
                     break
 
-        # Degenerate
+        # Degenerate on intersection
         if intersection:
-            c = a
+            c = a  # Swap to valid index (degenerate)
 
         pt_points.append(s_points[c])
-
-        # Move to next triangle
-        a, b = b, c
-        c = a + 1
-
-        # Degenerate on final point
-        if c >= len(s_points):
-            c = a
-            pt_points.append(s_points[c])
 
     return np.array(s_points), np.array(pt_points)
